@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Bucket List</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(rgba(5, 9, 18, .63), rgba(5, 9, 18, .78)), url("earth-background.gif") center center / cover fixed, #080d18;
+      color: #edf2ff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --muted: #9aa8c2;
+      --line: rgba(172, 193, 228, .14);
+      --panel: rgba(18, 27, 45, .88);
+      --accent: #62e6c2;
+      --accent-dark: #102a2a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 54px 24px 70px;
+      background: transparent;
+      min-height: 100vh;
+      color: #edf2ff;
+    }
+    h1 { margin: 0 0 30px; font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.055em; line-height: 1.05; }
+    h1::after { content: "."; color: var(--accent); }
+    h3 { margin: 0 0 14px; font-size: 1.08rem; letter-spacing: -.015em; }
+    .card {
+      margin: 0 0 14px;
+      padding: 25px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(24, 36, 59, .94), var(--panel));
+      box-shadow: 0 18px 50px rgba(0, 0, 0, .20);
+      backdrop-filter: blur(14px);
+    }
+    form#lookupForm { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    input, textarea {
+      min-height: 46px;
+      width: min(100%, 440px);
+      padding: 11px 14px;
+      border: 1px solid rgba(172, 193, 228, .22);
+      border-radius: 10px;
+      background: #0b1322;
+      color: #f4f7ff;
+      font: inherit;
+      outline: none;
+      transition: border-color .18s, box-shadow .18s, background .18s;
+    }
+    input::placeholder, textarea::placeholder { color: #73819c; }
+    input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(98, 230, 194, .14); background: #0d1728; }
+    #addForm input, #addForm textarea { display: block; }
+    textarea { min-height: 112px; resize: vertical; }
+    button {
+      min-height: 42px;
+      padding: 10px 15px;
+      border: 1px solid rgba(98, 230, 194, .32);
+      border-radius: 10px;
+      background: var(--accent-dark);
+      color: #9ff5df;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      transition: transform .16s, background .16s, border-color .16s;
+    }
+    button:hover { transform: translateY(-1px); background: #173b39; border-color: rgba(98, 230, 194, .62); }
+    button:focus-visible, a:focus-visible { outline: 3px solid rgba(98, 230, 194, .65); outline-offset: 3px; }
+    #addForm button[type="submit"], #lookupForm button { background: var(--accent); color: #06221f; border-color: var(--accent); }
+    #addForm button[type="submit"]:hover, #lookupForm button:hover { background: #8cf2d6; }
+    .message { margin: 12px 0 0; color: var(--muted); line-height: 1.5; }
+    .error { color: #ff8292; }
+    .success { color: #79e8b2; }
+    #lookupResult p { margin: 8px 0 0; color: #c8d4e9; }
+    #lookupResult strong { color: var(--accent); }
+    ul { list-style: none; padding: 0; margin: 18px 0 0; }
+    #travelList { display: grid; gap: 14px; }
+    #travelList > li { margin: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 14px 0; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(12, 20, 35, .72); }
+    li strong { color: #f3f6ff; font-size: 1.02rem; }
+    li span, li small { color: var(--muted); }
+    li small { display: inline-block; margin-top: 5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .actions a { text-decoration: none; }
+    .actions button { min-height: 36px; padding: 7px 11px; font-size: .9rem; }
+    .actions button:last-child { color: #ff9ba5; border-color: rgba(255, 130, 146, .25); background: rgba(95, 34, 48, .4); }
+    .actions button:last-child:hover { background: rgba(126, 43, 58, .62); }
+    .destination-content { flex: 1; min-width: 0; }
+    .destination-heading, .place-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .destination-identity { display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap; }
+    .places-list { display: grid; gap: 14px; margin-top: 16px; }
+    .place-card { padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(8, 15, 27, .45); }
+    .place-heading strong { color: #e9f2ff; font-size: 1rem; }
+    .place-actions { display: flex; gap: 7px; }
+    .place-actions button { min-height: 32px; padding: 5px 10px; font-size: .84rem; }
+    .place-actions button:last-child { color: #ff9ba5; border-color: rgba(255, 130, 146, .25); background: rgba(95, 34, 48, .4); }
+    .place-notes { display: grid; gap: 8px; margin-top: 13px; }
+    .notes-heading { color: #aebdd4; font-size: .82rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    .note-card { padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(8, 15, 27, .58); }
+    .note-text { margin: 0; color: #cbd6e9; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .note-actions { display: flex; gap: 7px; margin-top: 8px; }
+    .note-actions button { min-height: 30px; padding: 4px 9px; font-size: .82rem; }
+    .note-actions button:last-child { color: #ff9ba5; border-color: rgba(255, 130, 146, .25); background: rgba(95, 34, 48, .4); }
+    .note-form, .place-form { display: grid; gap: 8px; margin-top: 11px; }
+    .note-form textarea, .place-form input { width: 100%; max-width: none; }
+    .note-form textarea { min-height: 72px; }
+    .note-form button, .place-form button { justify-self: start; }
+    .place-form { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .note-empty { color: var(--muted); }
+    .note-edit-form, .place-edit-form { display: grid; gap: 8px; }
+    .note-edit-form textarea { width: 100%; max-width: none; min-height: 95px; }
+    .place-edit-form input { width: 100%; max-width: none; }
+    .note-edit-actions, .place-edit-actions { display: flex; gap: 8px; }
+    @media (max-width: 560px) {
+      body { padding: 34px 16px 48px; }
+      .card { padding: 20px; border-radius: 15px; }
+      li { align-items: flex-start; flex-direction: column; }
+      #lookupForm input, #lookupForm button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Travel Bucket List Manager</h1>
+
+  <div class="card">
+    <h3>Online Country Lookup (REST Countries)</h3>
+    <form id="lookupForm">
+      <input type="text" id="searchCountry" placeholder="Enter country name (e.g., Japan)" required>
+      <button type="submit">Search Online</button>
+    </form>
+    <div id="lookupResult" class="message" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h3>Add a Country and First Place</h3>
+    <form id="addForm">
+      <input type="text" id="country" placeholder="Country" required>
+      <br>
+      <input type="text" id="place" placeholder="First place" required>
+      <br>
+      <textarea id="notes" rows="4" placeholder="First place note (optional)"></textarea>
+      <br>
+      <button type="submit">Save Destination</button>
+      <div id="formMessage" class="message" aria-live="polite"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>My Bucket List</h3>
+    <p id="listMessage" class="message" aria-live="polite"></p>
+    <ul id="travelList"></ul>
+  </div>
+
+  <script>
+    const travelList = document.getElementById('travelList');
+    const listMessage = document.getElementById('listMessage');
+    const formMessage = document.getElementById('formMessage');
+    const lookupResult = document.getElementById('lookupResult');
+
+    function showMessage(element, message, type = '') {
+      element.textContent = message;
+      element.className = `message ${type}`;
+    }
+
+    async function apiRequest(url, options = {}) {
+      const response = await fetch(url, options);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'The request failed.');
+      return data;
+    }
+
+    function makeButton(label, className = '') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      if (className) button.className = className;
+      return button;
+    }
+
+    function placeUrl(countryId, placeId) {
+      return `/api/travel/${encodeURIComponent(countryId)}/places/${encodeURIComponent(placeId)}`;
+    }
+
+    function beginPlaceEdit(countryId, place, placeCard) {
+      placeCard.replaceChildren();
+      const form = document.createElement('form');
+      form.className = 'place-edit-form';
+      const input = document.createElement('input');
+      input.value = place.name;
+      input.required = true;
+      input.setAttribute('aria-label', 'Edit place name');
+      const buttons = document.createElement('div');
+      buttons.className = 'place-edit-actions';
+      const save = document.createElement('button');
+      save.type = 'submit';
+      save.textContent = 'Save place';
+      const cancel = makeButton('Cancel');
+      cancel.addEventListener('click', loadList);
+      buttons.append(save, cancel);
+      form.append(input, buttons);
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (!input.value.trim()) return input.focus();
+        try {
+          await apiRequest(placeUrl(countryId, place.id), {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: input.value.trim() })
+          });
+          await loadList();
+        } catch (error) {
+          showMessage(formMessage, `Could not update place: ${error.message}`, 'error');
+        }
+      });
+      placeCard.appendChild(form);
+      input.focus();
+    }
+
+    async function deletePlace(countryId, placeId) {
+      if (!confirm('Delete this place and all of its notes?')) return;
+      try {
+        await apiRequest(placeUrl(countryId, placeId), { method: 'DELETE' });
+        showMessage(formMessage, 'Place deleted.', 'success');
+        await loadList();
+      } catch (error) {
+        showMessage(formMessage, `Could not delete place: ${error.message}`, 'error');
+      }
+    }
+
+    function beginNoteEdit(countryId, place, note, noteCard) {
+      noteCard.replaceChildren();
+      const form = document.createElement('form');
+      form.className = 'note-edit-form';
+      const editor = document.createElement('textarea');
+      editor.rows = 4;
+      editor.value = note.text;
+      editor.setAttribute('aria-label', `Edit note for ${place.name}`);
+      const buttons = document.createElement('div');
+      buttons.className = 'note-edit-actions';
+      const save = document.createElement('button');
+      save.type = 'submit';
+      save.textContent = 'Save note';
+      const cancel = makeButton('Cancel');
+      cancel.addEventListener('click', loadList);
+      buttons.append(save, cancel);
+      form.append(editor, buttons);
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (!editor.value.trim()) return editor.focus();
+        try {
+          await apiRequest(`${placeUrl(countryId, place.id)}/notes/${encodeURIComponent(note.id)}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: editor.value.trim() })
+          });
+          await loadList();
+        } catch (error) {
+          showMessage(formMessage, `Could not update note: ${error.message}`, 'error');
+        }
+      });
+      noteCard.appendChild(form);
+      editor.focus();
+    }
+
+    async function deleteNote(countryId, placeId, noteId) {
+      if (!confirm('Delete this note?')) return;
+      try {
+        await apiRequest(`${placeUrl(countryId, placeId)}/notes/${encodeURIComponent(noteId)}`, { method: 'DELETE' });
+        showMessage(formMessage, 'Note deleted.', 'success');
+        await loadList();
+      } catch (error) {
+        showMessage(formMessage, `Could not delete note: ${error.message}`, 'error');
+      }
+    }
+
+    async function loadList() {
+      showMessage(listMessage, 'Loading countries...');
+      try {
+        const countries = await apiRequest('/api/travel');
+        travelList.replaceChildren();
+        if (countries.length === 0) {
+          showMessage(listMessage, 'Your bucket list is empty. Add your first country above.');
+          return;
+        }
+        showMessage(listMessage, `${countries.length} country/countries saved.`);
+
+        countries.forEach(country => {
+          const row = document.createElement('li');
+          const content = document.createElement('div');
+          content.className = 'destination-content';
+          const heading = document.createElement('div');
+          heading.className = 'destination-heading';
+          const countryName = document.createElement('strong');
+          countryName.textContent = country.country;
+          const countryActions = document.createElement('div');
+          countryActions.className = 'actions';
+          const editCountryLink = document.createElement('a');
+          editCountryLink.href = `edit.html?id=${encodeURIComponent(country.id)}`;
+          editCountryLink.appendChild(makeButton('Edit country'));
+          const deleteCountryButton = makeButton('Delete country');
+          deleteCountryButton.addEventListener('click', () => deleteRecord(country.id));
+          countryActions.append(editCountryLink, deleteCountryButton);
+          heading.append(countryName, countryActions);
+          content.appendChild(heading);
+
+          const places = document.createElement('div');
+          places.className = 'places-list';
+          (Array.isArray(country.places) ? country.places : []).forEach(place => {
+            const placeCard = document.createElement('section');
+            placeCard.className = 'place-card';
+            const placeHeading = document.createElement('div');
+            placeHeading.className = 'place-heading';
+            const placeName = document.createElement('strong');
+            placeName.textContent = place.name;
+            const placeActions = document.createElement('div');
+            placeActions.className = 'place-actions';
+            const editPlaceButton = makeButton('Edit place');
+            editPlaceButton.addEventListener('click', () => beginPlaceEdit(country.id, place, placeCard));
+            const deletePlaceButton = makeButton('Delete place');
+            deletePlaceButton.addEventListener('click', () => deletePlace(country.id, place.id));
+            placeActions.append(editPlaceButton, deletePlaceButton);
+            placeHeading.append(placeName, placeActions);
+            placeCard.appendChild(placeHeading);
+
+            const notes = document.createElement('div');
+            notes.className = 'place-notes';
+            const notesHeading = document.createElement('span');
+            notesHeading.className = 'notes-heading';
+            notesHeading.textContent = 'Notes for this place';
+            notes.appendChild(notesHeading);
+            const placeNotes = Array.isArray(place.notes) ? place.notes : [];
+            if (placeNotes.length === 0) {
+              const empty = document.createElement('span');
+              empty.className = 'note-empty';
+              empty.textContent = 'No notes yet.';
+              notes.appendChild(empty);
+            }
+            placeNotes.forEach(note => {
+              const noteCard = document.createElement('div');
+              noteCard.className = 'note-card';
+              const noteText = document.createElement('p');
+              noteText.className = 'note-text';
+              noteText.textContent = note.text;
+              const noteActions = document.createElement('div');
+              noteActions.className = 'note-actions';
+              const editNoteButton = makeButton('Edit note');
+              editNoteButton.addEventListener('click', () => beginNoteEdit(country.id, place, note, noteCard));
+              const deleteNoteButton = makeButton('Delete note');
+              deleteNoteButton.addEventListener('click', () => deleteNote(country.id, place.id, note.id));
+              noteActions.append(editNoteButton, deleteNoteButton);
+              noteCard.append(noteText, noteActions);
+              notes.appendChild(noteCard);
+            });
+            placeCard.appendChild(notes);
+
+            const noteForm = document.createElement('form');
+            noteForm.className = 'note-form';
+            const noteInput = document.createElement('textarea');
+            noteInput.rows = 3;
+            noteInput.placeholder = `Add a note for ${place.name}`;
+            noteInput.setAttribute('aria-label', `Add a note for ${place.name}`);
+            const addNoteButton = document.createElement('button');
+            addNoteButton.type = 'submit';
+            addNoteButton.textContent = 'Add note';
+            noteForm.append(noteInput, addNoteButton);
+            noteForm.addEventListener('submit', async event => {
+              event.preventDefault();
+              if (!noteInput.value.trim()) return noteInput.focus();
+              try {
+                await apiRequest(`${placeUrl(country.id, place.id)}/notes`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ text: noteInput.value.trim() })
+                });
+                showMessage(formMessage, 'Note added.', 'success');
+                await loadList();
+              } catch (error) {
+                showMessage(formMessage, `Could not add note: ${error.message}`, 'error');
+              }
+            });
+            placeCard.appendChild(noteForm);
+            places.appendChild(placeCard);
+          });
+          content.appendChild(places);
+
+          const placeForm = document.createElement('form');
+          placeForm.className = 'place-form';
+          const placeInput = document.createElement('input');
+          placeInput.placeholder = `Add a place in ${country.country}`;
+          placeInput.setAttribute('aria-label', `Add a place in ${country.country}`);
+          placeInput.required = true;
+          const addPlaceButton = document.createElement('button');
+          addPlaceButton.type = 'submit';
+          addPlaceButton.textContent = 'Add place';
+          placeForm.append(placeInput, addPlaceButton);
+          placeForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (!placeInput.value.trim()) return placeInput.focus();
+            try {
+              await apiRequest(`/api/travel/${encodeURIComponent(country.id)}/places`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: placeInput.value.trim() })
+              });
+              showMessage(formMessage, 'Place added.', 'success');
+              await loadList();
+            } catch (error) {
+              showMessage(formMessage, `Could not add place: ${error.message}`, 'error');
+            }
+          });
+          content.appendChild(placeForm);
+          row.appendChild(content);
+          travelList.appendChild(row);
+        });
+      } catch (error) {
+        showMessage(listMessage, `Could not load countries: ${error.message}`, 'error');
+      }
+    }
+
+    document.getElementById('addForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const country = document.getElementById('country').value.trim();
+      const place = document.getElementById('place').value.trim();
+      const note = document.getElementById('notes').value.trim();
+      try {
+        await apiRequest('/api/travel', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ country, place, note })
+        });
+        event.target.reset();
+        showMessage(formMessage, 'Country and first place saved.', 'success');
+        await loadList();
+      } catch (error) {
+        showMessage(formMessage, `Could not save country: ${error.message}`, 'error');
+      }
+    });
+
+    async function deleteRecord(id) {
+      if (!confirm('Delete this country and all of its places and notes?')) return;
+      try {
+        await apiRequest(`/api/travel/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        showMessage(formMessage, 'Country deleted.', 'success');
+        await loadList();
+      } catch (error) {
+        showMessage(formMessage, `Could not delete country: ${error.message}`, 'error');
+      }
+    }
+
+    document.getElementById('lookupForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const query = document.getElementById('searchCountry').value.trim();
+      if (!query) return;
+      showMessage(lookupResult, 'Searching...');
+      try {
+        const data = await apiRequest(`/api/lookup/${encodeURIComponent(query)}`);
+        lookupResult.replaceChildren();
+        [['Country Name', data.country], ['Place', data.capital], ['Region', data.region]].forEach(([label, value]) => {
+          const p = document.createElement('p');
+          const strong = document.createElement('strong');
+          strong.textContent = `${label}: `;
+          p.append(strong, document.createTextNode(value || 'Not available'));
+          lookupResult.appendChild(p);
+        });
+      } catch (error) {
+        showMessage(lookupResult, error.message || 'Online search failed.', 'error');
+      }
+    });
+
+    loadList();
+  </script>
+</body>
+</html>

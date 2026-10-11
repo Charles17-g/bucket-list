@@ -1,0 +1,12 @@
+{
+  "name": "travel-bucket-list",
+  "version": "1.0.0",
+  "description": "Travel bucket list manager with persistent JSON storage and REST Countries lookup",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
